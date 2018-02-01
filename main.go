@@ -69,7 +69,7 @@ func mapHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	command := parseMessage(m.Content)
 
-	if command.command != botPrefix+"map" {
+	if strings.ToLower(command.command) != botPrefix+"map" {
 		// not suitable for this handler
 		// TODO: Check if there's a way to define this earlier (at handler declaration)
 		return
