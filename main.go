@@ -115,21 +115,10 @@ func addReaction(s *discordgo.Session, cID, mID, reaction string) error {
 	return s.MessageReactionAdd(cID, mID, emoji.Emoji(reaction))
 }
 
-// isValidCoord checks if the provided string is a valid coordinate on the map grid
-func isValidCoord(coord string) bool {
-	directions := []string{
-		"a1", "a2", "a3", "a4",
-		"b1", "b2", "b3", "b4", "b5",
-		"c1", "c2", "c3", "c4", "c5", "c6",
-		"d1", "d2", "d3", "d4", "d5", "d6", "d7",
-		"e2", "e3", "e4", "e5", "e6", "e7",
-		"f3", "f4", "f5", "f6", "f7",
-		"g4", "g5", "g6", "g7",
-	}
-
-	coord = strings.ToLower(coord)
-	for _, c := range directions {
-		if coord == c {
+// contains checks if a set of strings contains given value
+func contains(set []string, val string) bool {
+	for _, c := range set {
+		if val == c {
 			return true
 		}
 	}
