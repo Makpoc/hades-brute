@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
 
@@ -25,6 +24,15 @@ type commandWithArgs struct {
 	args    []string
 }
 
+type commandHandler interface {
+	Handle(s *discordgo.Session, m *discordgo.MessageCreate, command commandWithArgs)
+}
+
+var supportedCommands = map[string]func(*discordgo.Session, *discordgo.MessageCreate, commandWithArgs){
+	"map":  mapHandler,
+	"help": helpHandler,
+}
+
 func main() {
 	initEnv()
 
@@ -42,7 +50,7 @@ func main() {
 
 	botID = u.ID
 
-	dg.AddHandler(mapHandler)
+	dg.AddHandler(commandDispatchHandler)
 
 	err = dg.Open()
 	if err != nil {
@@ -61,52 +69,23 @@ func initEnv() {
 	backendURL = getEnvPropOrDefault("backendURL", "http://159.65.22.117:8080")
 }
 
-// mapHandler answers calls to .map and .map [coord] message
-func mapHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+func commandDispatchHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if !shouldBotAnswer(m.Content) {
 		return
 	}
 
 	command := parseMessage(m.Content)
 
-	if strings.ToLower(command.command) != botPrefix+"map" {
-		// not suitable for this handler
-		// TODO: Check if there's a way to define this earlier (at handler declaration)
+	if command.command == "" {
 		return
 	}
 
-	url := fmt.Sprintf("%s/map?secret=%s", backendURL, backendSecret)
-
-	if len(command.args) > 0 && isValidCoord(command.args[0]) {
-		url = fmt.Sprintf("%s&coords=%s", url, command.args[0])
-		command.args = command.args[1:]
-	}
-
-	resp, err := http.Get(url)
-	if err != nil {
-		fmt.Println("Failed to get map", err)
-		s.ChannelMessageSend(m.ChannelID, ":flushed: Failed to get map")
-		return
-	}
-	defer resp.Body.Close()
-
-	respContentType := resp.Header.Get("Content-Type")
-	if !strings.HasPrefix(respContentType, "image/") {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":thinking: Suspecious content type: %s!", respContentType))
-		fmt.Println("Invalid map format!")
+	handlerFunc := supportedCommands[strings.ToLower(strings.TrimPrefix(command.command, botPrefix))]
+	if handlerFunc == nil {
 		return
 	}
 
-	if len(command.args) > 0 {
-		_, err = s.ChannelFileSendWithMessage(m.ChannelID, strings.Join(command.args[0:], " "), "map.jpeg", resp.Body)
-	} else {
-		_, err = s.ChannelFileSend(m.ChannelID, "map.jpeg", resp.Body)
-	}
-
-	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, ":flushed: Failed to fullfil your desire")
-		fmt.Println("Failed to send file!", err)
-	}
+	handlerFunc(s, m, command)
 }
 
 // parseMessage parses the content of the message and returns it as command and args
@@ -126,28 +105,6 @@ func parseMessage(content string) commandWithArgs {
 
 	return result
 }
-
-// func dumbShitHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-
-// 	if m.Author.ID == botID {
-// 		return
-// 	}
-
-// 	if !shouldBotAnswer(m.Content) {
-// 		return
-// 	}
-
-// 	err := addReaction(s, m.ChannelID, m.ID, ":beers:")
-// 	if err != nil {
-// 		fmt.Println(err)
-// 	}
-
-// 	if strings.Contains(strings.ToLower(m.Author.Username), "astro") {
-// 		addReaction(s, m.ChannelID, m.ID, ":bow:")
-// 	}
-
-// 	fmt.Printf("Got message: %s\n", m.Content)
-// }
 
 func shouldBotAnswer(message string) bool {
 	return strings.HasPrefix(message, botPrefix)
