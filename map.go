@@ -8,13 +8,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+// mapCommand is the structure of a command, called using [botPrefix]map
 type mapCommand struct {
 	args    []string
 	author  string
 	message []string
 }
 
-// mapHandler answers calls to map and map [coord, ...] message
+// mapHandler answers calls to map and map [coord|color] message
 func mapHandler(s *discordgo.Session, m *discordgo.MessageCreate, command commandWithArgs) {
 
 	mCommand := parseMapCommand(command)
@@ -45,6 +46,7 @@ func mapHandler(s *discordgo.Session, m *discordgo.MessageCreate, command comman
 	}
 }
 
+// sendDiscordResponse sends the response from the backend to the discord channel it got the trigger from. It will also add a message to the file in that response, containing the author of the trigger and will delete the original message.
 func sendDiscordResponse(s *discordgo.Session, m *discordgo.MessageCreate, resp *http.Response, mCommand mapCommand) error {
 	respContentType := resp.Header.Get("Content-Type")
 	if !strings.HasPrefix(respContentType, "image/") {

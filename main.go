@@ -19,15 +19,18 @@ var (
 	backendURL    string
 )
 
+// commandWithArgs is the message content split into command (the first word) and arguments (everything after that)
 type commandWithArgs struct {
 	command string
 	args    []string
 }
 
+// commandHandler is the interface, defining a handler for this bot's commands
 type commandHandler interface {
 	Handle(s *discordgo.Session, m *discordgo.MessageCreate, command commandWithArgs)
 }
 
+// supportedCommands is the map of supported command triggers and their corresponding handlers
 var supportedCommands = map[string]func(*discordgo.Session, *discordgo.MessageCreate, commandWithArgs){
 	"map":  mapHandler,
 	"help": helpHandler,
@@ -64,11 +67,13 @@ func main() {
 	return
 }
 
+// initEnv initializes the application from the environment
 func initEnv() {
 	backendSecret = getEnvPropOrDefault("secret", "")
-	backendURL = getEnvPropOrDefault("backendURL", "http://159.65.22.117:8080")
+	backendURL = getEnvPropOrDefault("backendURL", "http://localhost:8080")
 }
 
+// commandDispatchHandler is the Router for discord commands. It checks if the message is intened to be handled by the bot and if so - delegates it to the appropriate handler function.
 func commandDispatchHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if !shouldBotAnswer(m.Content) {
 		return
@@ -93,7 +98,7 @@ func parseMessage(content string) commandWithArgs {
 	result := commandWithArgs{}
 
 	cont := strings.Split(content, " ")
-	if len(cont) < 1 {
+	if len(cont) == 0 {
 		return result // empty
 	}
 
@@ -106,6 +111,7 @@ func parseMessage(content string) commandWithArgs {
 	return result
 }
 
+// shouldBotAnswer checks if the message is intended for the bot, by checking if it's prefixed by botPrefix.
 func shouldBotAnswer(message string) bool {
 	return strings.HasPrefix(message, botPrefix)
 }
@@ -125,6 +131,7 @@ func contains(set []string, val string) bool {
 	return false
 }
 
+// getEnvPropsOrDefault looks for an environment variable for the given key. If such is found - it returns it, otherwise it returns the provided default value
 func getEnvPropOrDefault(key, def string) string {
 	if v, ok := os.LookupEnv(key); ok {
 		return v
