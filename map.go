@@ -10,6 +10,7 @@ import (
 
 type mapCommand struct {
 	args    []string
+	author  string
 	message []string
 }
 
@@ -17,6 +18,7 @@ type mapCommand struct {
 func mapHandler(s *discordgo.Session, m *discordgo.MessageCreate, command commandWithArgs) {
 
 	mCommand := parseMapCommand(command)
+	mCommand.author = m.Author.Username
 
 	url := fmt.Sprintf("%s/map?secret=%s", backendURL, backendSecret)
 	if len(mCommand.args) > 0 {
@@ -31,28 +33,39 @@ func mapHandler(s *discordgo.Session, m *discordgo.MessageCreate, command comman
 	}
 	defer resp.Body.Close()
 
-	sendDiscordResponse(s, m, resp, mCommand)
+	err = sendDiscordResponse(s, m, resp, mCommand)
+	if err != nil {
+		fmt.Println("Something went wrong while sending Discord response", err)
+		return
+	}
+
+	err = s.ChannelMessageDelete(m.ChannelID, m.ID)
+	if err != nil {
+		fmt.Println("Failed to delete trigger message", err)
+	}
 }
 
-func sendDiscordResponse(s *discordgo.Session, m *discordgo.MessageCreate, resp *http.Response, mCommand mapCommand) {
+func sendDiscordResponse(s *discordgo.Session, m *discordgo.MessageCreate, resp *http.Response, mCommand mapCommand) error {
 	respContentType := resp.Header.Get("Content-Type")
 	if !strings.HasPrefix(respContentType, "image/") {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":thinking: Suspecious content type: %s!", respContentType))
-		fmt.Println("Invalid map format!")
-		return
+		return fmt.Errorf("invalid map format")
 	}
 
 	var err error
 	if len(mCommand.message) > 0 {
-		_, err = s.ChannelFileSendWithMessage(m.ChannelID, strings.Join(mCommand.message, " "), "map.jpeg", resp.Body)
+		message := fmt.Sprintf("**%s**: %s", mCommand.author, strings.Join(mCommand.message, " "))
+		_, err = s.ChannelFileSendWithMessage(m.ChannelID, message, "map.jpeg", resp.Body)
 	} else {
-		_, err = s.ChannelFileSend(m.ChannelID, "map.jpeg", resp.Body)
+		_, err = s.ChannelFileSendWithMessage(m.ChannelID, fmt.Sprintf("**%s** asked for: ", mCommand.author), "map.jpeg", resp.Body)
 	}
 
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, ":flushed: Failed to fullfil your desire")
-		fmt.Println("Failed to send file!", err)
+		return err
 	}
+
+	return nil
 }
 
 // parseMapCommand parses the given command into a map command struct
