@@ -9,7 +9,7 @@ import (
 )
 
 type mapCommand struct {
-	coords  []string
+	args    []string
 	message []string
 }
 
@@ -19,8 +19,8 @@ func mapHandler(s *discordgo.Session, m *discordgo.MessageCreate, command comman
 	mCommand := parseMapCommand(command)
 
 	url := fmt.Sprintf("%s/map?secret=%s", backendURL, backendSecret)
-	if len(mCommand.coords) > 0 {
-		url = fmt.Sprintf("%s&coords=%s", url, strings.Join(mCommand.coords, ","))
+	if len(mCommand.args) > 0 {
+		url = fmt.Sprintf("%s&coords=%s", url, strings.Join(mCommand.args, ","))
 	}
 
 	resp, err := http.Get(url)
@@ -60,8 +60,8 @@ func parseMapCommand(command commandWithArgs) mapCommand {
 	var mCommand mapCommand
 	if len(command.args) > 0 {
 		for i, w := range command.args {
-			if isValidCoord(w) {
-				mCommand.coords = append(mCommand.coords, w)
+			if isValidArgument(w) {
+				mCommand.args = append(mCommand.args, w)
 			} else {
 				mCommand.message = command.args[i:]
 				break
@@ -70,4 +70,25 @@ func parseMapCommand(command commandWithArgs) mapCommand {
 	}
 
 	return mCommand
+}
+
+// isValidArgument checks if the provided string is a valid argument (coordinate or color)
+func isValidArgument(arg string) bool {
+	directions := []string{
+		"a1", "a2", "a3", "a4",
+		"b1", "b2", "b3", "b4", "b5",
+		"c1", "c2", "c3", "c4", "c5", "c6",
+		"d1", "d2", "d3", "d4", "d5", "d6", "d7",
+		"e2", "e3", "e4", "e5", "e6", "e7",
+		"f3", "f4", "f5", "f6", "f7",
+		"g4", "g5", "g6", "g7",
+	}
+
+	colors := []string{
+		"green", "orage", "pink", "yellow",
+	}
+
+	arg = strings.ToLower(arg)
+
+	return contains(directions, arg) || contains(colors, arg)
 }
