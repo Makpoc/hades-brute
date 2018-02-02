@@ -85,7 +85,7 @@ func isValidArgument(arg string) bool {
 	}
 
 	colors := []string{
-		"green", "orage", "pink", "yellow",
+		"green", "orange", "pink", "yellow",
 	}
 
 	arg = strings.ToLower(arg)
