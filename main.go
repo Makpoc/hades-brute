@@ -36,6 +36,7 @@ var supportedCommands = map[string]func(*discordgo.Session, *discordgo.MessageCr
 	"help":   helpHandler,
 	"sheet":  sheetHandler,
 	"coffee": coffeeHandler,
+	"tz":     tzHandler,
 }
 
 func main() {
