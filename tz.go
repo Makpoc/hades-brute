@@ -10,40 +10,42 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func dbTest() error {
+const tableName = "tz"
+
+func dbTest(username string) (int, error) {
 	dbUser := getEnvPropOrDefault("dbUser", "")
 	dbPass := getEnvPropOrDefault("dbPass", "")
-
 	dbName := getEnvPropOrDefault("dbName", "")
 
 	db, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", dbUser, dbPass, dbName))
 
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer db.Close()
 
-	err = db.Ping()
+	sqlStatement := `SELECT timezone FROM tz WHERE username=$1;`
+	var tz int
+	row := db.QueryRow(sqlStatement, username)
+	err = row.Scan(&tz)
 	if err != nil {
-		fmt.Println("Ping failed", err)
-		return err
+		return 0, err
 	}
-
-	fmt.Println("Pong")
-	return nil
+	return tz, nil
 }
 
 func tzHandler(s *discordgo.Session, m *discordgo.MessageCreate, command commandWithArgs) {
-	err := dbTest()
+	tzOffset, err := dbTest(m.Author.Username)
 	if err != nil {
 		err = s.MessageReactionAdd(m.ChannelID, m.ID, emoji.Emoji(":thumbsdown:"))
+
 		if err != nil {
 			fmt.Printf("Failed to add reaction: %v\n", err)
 		}
 		return
 	}
 
-	err = s.MessageReactionAdd(m.ChannelID, m.ID, emoji.Emoji(":thumbsup:"))
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("TimeZone (GMT): %d", tzOffset))
 	if err != nil {
 		fmt.Printf("Failed to add reaction: %v\n", err)
 	}
