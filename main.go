@@ -32,9 +32,10 @@ type commandHandler interface {
 
 // supportedCommands is the map of supported command triggers and their corresponding handlers
 var supportedCommands = map[string]func(*discordgo.Session, *discordgo.MessageCreate, commandWithArgs){
-	"map":   mapHandler,
-	"help":  helpHandler,
-	"sheet": sheetHandler,
+	"map":    mapHandler,
+	"help":   helpHandler,
+	"sheet":  sheetHandler,
+	"coffee": coffeeHandler,
 }
 
 func main() {
