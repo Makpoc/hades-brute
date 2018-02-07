@@ -17,7 +17,7 @@ func coffeeHandler(s *discordgo.Session, m *discordgo.MessageCreate, command com
     *6.* 1/4 teaspoon sugar.
     *7.* Shake until foamy, about 30 seconds; strain into a martini glass.
     *8.* Give to someone else and get a :beer: or 3
-    *9.* Enjoy :beers:`, m.Author.Mention)
+    *9.* Enjoy :beers:`, m.Author.Mention))
 	if err != nil {
 		fmt.Println(err)
 	}
