@@ -10,13 +10,13 @@ import (
 	_ "github.com/lib/pq"
 )
 
-const (
-	dbUser = "postgres"
-	dbName = "tz"
-)
-
 func dbTest() error {
-	db, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", dbUser, dbUser, dbName))
+	dbUser := getEnvPropOrDefault("dbUser", "")
+	dbPass := getEnvPropOrDefault("dbPass", "")
+
+	dbName := getEnvPropOrDefault("dbName", "")
+
+	db, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", dbUser, dbPass, dbName))
 
 	if err != nil {
 		return err
