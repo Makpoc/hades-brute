@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/jinzhu/gorm"
 	"github.com/ttacon/emoji"
 )
 
@@ -17,7 +18,19 @@ var botPrefix = "."
 var (
 	backendSecret string
 	backendURL    string
+
+	dbUser string
+	dbPass string
+	dbName string
+
+	db *gorm.DB
 )
+
+type CommandHandler interface {
+	Register()
+	Handle(*discordgo.Session, *discordgo.MessageCreate, commandWithArgs)
+	Help() string
+}
 
 // commandWithArgs is the message content split into command (the first word) and arguments (everything after that)
 type commandWithArgs struct {
@@ -36,22 +49,29 @@ var supportedCommands = map[string]func(*discordgo.Session, *discordgo.MessageCr
 	"help":   helpHandler,
 	"sheet":  sheetHandler,
 	"coffee": coffeeHandler,
+	"frosty": frostyHandler,
 	"tz":     tzHandler,
 }
 
 func main() {
 	initEnv()
 
+	// var err error
+	// db, err = gorm.Open("postgres", fmt.Sprintf("user=%s dbname=%s sslmode=disable password=%s", dbUser, dbName, dbPass))
+	// if err != nil {
+	// 	printAndExit(err)
+	// }
+	// defer db.Close()
+
 	dg, err := discordgo.New(fmt.Sprintf("Bot %s", token))
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		printAndExit(err)
+
 	}
 
 	u, err := dg.User("@me")
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		printAndExit(err)
 	}
 
 	botID = u.ID
@@ -60,8 +80,7 @@ func main() {
 
 	err = dg.Open()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		printAndExit(err)
 	}
 
 	fmt.Println("Bot is running")
@@ -70,10 +89,20 @@ func main() {
 	return
 }
 
+func printAndExit(err error) {
+	fmt.Printf("%v\n", err)
+	os.Exit(1)
+}
+
 // initEnv initializes the application from the environment
 func initEnv() {
 	backendSecret = getEnvPropOrDefault("secret", "")
 	backendURL = getEnvPropOrDefault("backendURL", "http://localhost:8080")
+
+	dbPass = getEnvPropOrDefault("dbPass", "")
+	dbName = getEnvPropOrDefault("dbName", "")
+	dbUser = getEnvPropOrDefault("dbUser", "")
+
 }
 
 // commandDispatchHandler is the Router for discord commands. It checks if the message is intened to be handled by the bot and if so - delegates it to the appropriate handler function.
