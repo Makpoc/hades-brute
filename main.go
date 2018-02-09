@@ -10,7 +10,7 @@ import (
 	"github.com/ttacon/emoji"
 )
 
-const token string = "NDA4NTkzNjk2OTk3NjM4MTQ0.DVSY9Q.IQBtk09A2PWN8HB0AkxGfnbL960"
+var token string
 
 var botID string
 var botPrefix = "."
@@ -96,6 +96,7 @@ func printAndExit(err error) {
 
 // initEnv initializes the application from the environment
 func initEnv() {
+  token = getEnvPropOrDefault("BOT_TOKEN", "")
 	backendSecret = getEnvPropOrDefault("secret", "")
 	backendURL = getEnvPropOrDefault("backendURL", "http://localhost:8080")
 
